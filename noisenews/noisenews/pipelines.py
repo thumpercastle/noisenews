@@ -6,8 +6,10 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 import sqlite3
+from datetime import date
+import itertools
 
-# TODO: Getting some unwanted line breaks between URLs and webpage sections
+# TODO: Getting some duplicates in SQL database
 
 
 
@@ -18,13 +20,13 @@ U_list = []
 
 class NoisenewsPipeline:
 
-    # def __init__(self):
-    #     self.create_connection()
+    def __init__(self):
+        self.create_connection()
 
 
-    # def create_connection(self):
-    #     self.conn = sqlite3.connect('articles.db')
-    #     self.curr = self.conn.cursor()
+    def create_connection(self):
+        self.conn = sqlite3.connect('articles.db')
+        self.curr = self.conn.cursor()
 
     # def create_table(self):
     #     self.curr.execute("""create table articles_tb(
@@ -37,21 +39,26 @@ class NoisenewsPipeline:
 
         global H_list, S_list, U_list
 
-        file1 = open("publish.txt", "a")
-
-        def clean_list(list, item_key):
-            if item_key not in list:
-                list.append(item_key)
-                file1.write(item_key)
-                file1.write("\n")
-            elif item_key in list:
+        def clean_list(list, item_key_values):
+            if item_key_values not in list:
+                list.append(item_key_values)
+            elif item_key_values in list:
                 pass
 
         clean_list(H_list, item["headline"])
         clean_list(S_list, item["subheading"])
         clean_list(U_list, item["url"])
-        file1.write("\n")
-        file1.close()
 
-        print("Pipeline: " + item["headline"])
-        return item
+        today = date.today()
+        date_str = today.strftime("%d/%m/%Y")
+
+        for (a, b, c) in itertools.zip_longest(H_list, S_list, U_list):
+            self.curr.execute("""insert into articles_tb values (?,?,?,?)""",(
+                a,
+                b,
+                c,
+                date_str
+            ))
+            self.conn.commit()
+            print("Hello, it's me you're looking for.")
+            print(a)
